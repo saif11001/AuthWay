@@ -47,7 +47,7 @@ It provides secure user authentication, JWT-based authorization, and role manage
 
 ---
 
-## 📌 API Endpoints (Examples)
+## API Endpoints (Examples)
 
 ### Auth
 
@@ -77,6 +77,3 @@ Saif Eldeen Sobhi
 
 LinkedIn
 https://www.linkedin.com/in/saif-eldeen-sobhy/
-
-
-تحب أعملك نسخة تانية **مختصرة جدًا** تنفع تحطها لمشاريع التدريب الصغيرة بدل التفصيل الكتير؟
