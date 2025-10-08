@@ -1,5 +1,5 @@
 const { validationResult } = require('express-validator');
-const httpStatusText = require('../utils/httpStatusText');
+const httpStatusText = require('../../utils/httpStatusText');
 
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);

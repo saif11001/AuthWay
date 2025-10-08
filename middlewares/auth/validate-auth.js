@@ -1,5 +1,5 @@
 const { body } = require('express-validator');
-const User = require('../model/user');
+const User = require('../../model/user');
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
 

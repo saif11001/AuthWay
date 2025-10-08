@@ -7,6 +7,8 @@ const httpStatusText = require('../utils/httpStatusText');
 
 const getAllUsers = async (req, res, next) => {
     const { limit = 10, page = 1, sort = 'createdAt' } = req.query;
+    limit = Number(limit) || 10;
+    page = Number(page) || 10;
     const skip = ( page - 1 ) * limit;
     try{
         const users = await User.find({}, "-password -refreshToken -resetToken -resetTokenExpiration -__v" ).sort(sort).limit(limit).skip(skip);

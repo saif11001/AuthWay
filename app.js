@@ -1,29 +1,29 @@
 const path = require('path');
-const fa = require('fs');
+const fs = require('fs');
 const express = require('express');
 const mongoose = require('mongoose');
-require('dotenv').config();
 const cookieParser = require("cookie-parser");
 const cors = require('cors');
 const helmet = require('helmet');
 
 const httpStatusText = require('./utils/httpStatusText');
 const logger = require('./middlewares/logger');
+const config = require('./config/index');
 
-const uri = process.env.MONGO_URL;
-const port = process.env.PORT;
+const uri = config.db.uri;
+const port = config.app.port;
 
 const app = express();
 
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fa.existsSync(uploadsDir)) {
-    fa.mkdirSync(uploadsDir, { recursive: true });
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
 }
 app.use('/uploads', express.static(uploadsDir));
 app.use(cookieParser());
 app.use(express.json());
 app.use(cors({
-    origin: process.env.CLIENT_URL,
+    origin: config.clientUrl,
     credentials: true,
 }));
 app.use(

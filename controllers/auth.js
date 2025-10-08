@@ -1,6 +1,7 @@
 const User = require('../model/user');
 const httpStatusText = require('../utils/httpStatusText');
 const userRole = require('../utils/userRole');
+const config = require('../config/index');
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -30,8 +31,8 @@ const register = async (req, res, next) => {
             avatar: req.file ? req.file.filename : null
         })
 
-        const accessToken = jwt.sign({ id: user._id, email: user.email, userRole: user.userRole }, process.env.JWT_SECRET_KEY, { expiresIn : '15m' });
-        const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '30d' });
+        const accessToken = jwt.sign({ id: user._id, email: user.email, userRole: user.userRole }, config.jwtSecret.key, { expiresIn : config.jwtSecret.expiresIn });
+        const refreshToken = jwt.sign({ id: user._id }, config.jwtRefresh.key, { expiresIn: config.jwtRefresh.expiresIn });
         
         
         user.sessions.push({
@@ -90,8 +91,8 @@ const login = async (req, res, next) => {
             throw error;
         }
 
-        const accessToken  = jwt.sign({ id: user._id, email: user.email, userRole: user.userRole }, process.env.JWT_SECRET_KEY, { expiresIn: '15m'});
-        const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '30d' });
+        const accessToken  = jwt.sign({ id: user._id, email: user.email, userRole: user.userRole }, config.jwtSecret.key, { expiresIn: config.jwtSecret.expiresIn });
+        const refreshToken = jwt.sign({ id: user._id }, config.jwtRefresh.key, { expiresIn: config.jwtRefresh.expiresIn });
 
         user.sessions.push({
             refreshToken,
@@ -142,7 +143,7 @@ const forgetPassword = async (req, res, next) => {
         
         await user.save();
         
-        const resetURL = `${process.env.CLIENT_URL}/reset-password/${user.resetToken}`;
+        const resetURL = `${config.clientUrl}/reset-password/${user.resetToken}`;
         await sendEmail(user.email, "Reset Password", `Click the following link to reset your password: ${resetURL}`);
 
         res.status(200).json({ status: httpStatusText.SUCCESS, message: 'Reset link sent to your email.' });

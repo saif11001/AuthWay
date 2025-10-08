@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
-const httpStatusText = require('../utils/httpStatusText');
-const User = require('../model/user');
+const httpStatusText = require('../../utils/httpStatusText');
+const User = require('../../model/user');
+const config = require('../../config/index');
 
 const verifyToken = async (req, res, next) => {
 
@@ -10,7 +11,7 @@ const verifyToken = async (req, res, next) => {
     // }
     try{
         if (accessToken) {
-            const decoded = jwt.verify(accessToken, process.env.JWT_SECRET_KEY);
+            const decoded = jwt.verify(accessToken, config.jwtSecret.key);
             req.user = decoded;
             return next();
         }    
@@ -25,7 +26,7 @@ const verifyToken = async (req, res, next) => {
         return res.status(401).json({ status: httpStatusText.FAIL, message: "Access token expired and no refresh token available." })
     }
     try{
-        const decodedRefreshToken = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const decodedRefreshToken = jwt.verify(refreshToken, config.jwtRefresh.key);
         const user = await User.findById(decodedRefreshToken.id);
         
         if(!user) {
@@ -33,7 +34,7 @@ const verifyToken = async (req, res, next) => {
             res.clearCookie("refreshToken");
             return res.status(401).json({ status: httpStatusText.FAIL, message: "Invalid refresh token. Please login again." });
         }
-        
+
         const session = user.sessions.find(s => s.refreshToken === refreshToken);
         if (!session) {
             res.clearCookie("accessToken");
@@ -44,8 +45,8 @@ const verifyToken = async (req, res, next) => {
             });
         }
 
-        const newAccessToken = jwt.sign({ id: user._id, email: user.email, userRole: user.userRole }, process.env.JWT_SECRET_KEY, { expiresIn: '15m' } );
-        const newRefreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '30d' });
+        const newAccessToken = jwt.sign({ id: user._id, email: user.email, userRole: user.userRole }, config.jwtSecret.key, { expiresIn: config.jwtSecret.expiresIn } );
+        const newRefreshToken = jwt.sign({ id: user._id }, config.jwtRefresh.key, { expiresIn: config.jwtRefresh.expiresIn });
 
         session.refreshToken = newRefreshToken;
         session.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -66,7 +67,7 @@ const verifyToken = async (req, res, next) => {
         })
 
         // req.user = jwt.decode(newAccessToken);
-        req.user = jwt.verify(newAccessToken, process.env.JWT_SECRET_KEY);
+        req.user = jwt.verify(newAccessToken, config.jwtSecret.key);
         next();
 
     }catch (error) {

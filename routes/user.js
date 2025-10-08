@@ -1,12 +1,12 @@
 const express = require('express');
 
 const controllerUser = require('../controllers/user');
-const verifyToken = require('../middlewares/verifyToken');
-const allowedTo = require('../middlewares/allowedTo');
+const verifyToken = require('../middlewares/auth/verifyToken');
+const allowedTo = require('../middlewares/auth/allowedTo');
 const userRole = require('../utils/userRole');
-const validate = require('../middlewares/validate-auth');
-const handleValidationErrors = require('../middlewares/handleValidationErrors');
-const authLimiter = require('../middlewares/rateLimiter');
+const validate = require('../middlewares/auth/validate-auth');
+const handleValidationErrors = require('../middlewares/auth/handleValidationErrors');
+const authLimiter = require('../middlewares/auth/rateLimiter');
 const upload = require('../middlewares/upload');
 
 const router = express.Router();
