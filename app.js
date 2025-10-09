@@ -43,7 +43,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 
 app.use((error, req, res, next) => {
-    logger.error(error);
+    logger.error(error.stack || error.message);
     const status = error.statusCode || 500;
     const message = error.message || "Something went wrong!";
     const data = error.data || null;

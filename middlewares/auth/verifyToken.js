@@ -56,13 +56,13 @@ const verifyToken = async (req, res, next) => {
         res.cookie("accessToken", newAccessToken, {
             httpOnly: true,
             // secure: true,
-            sameSite: "lax",
+            sameSite: "none",
             maxAge: 15 * 60 * 1000,
         })
         res.cookie("refreshToken", newRefreshToken, {
             httpOnly: true,
             // secure: true,
-            sameSite: "lax",
+            sameSite: "none",
             maxAge: 30 * 24 * 60 * 60 * 1000,
         })
 

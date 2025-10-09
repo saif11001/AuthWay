@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const register = async (req, res, next) => {
-    const { firstName, lastName, email, password, role } = req.body;
+    const { firstName, lastName, email, password } = req.body;
     try{
         const oldUser = await User.findOne({ email });
         if(oldUser){
@@ -27,7 +27,7 @@ const register = async (req, res, next) => {
             lastName: lastName,
             email: email,
             password: hashPassword,
-            userRole: role || userRole.USER,
+            userRole: userRole.USER,
             avatar: req.file ? req.file.filename : null
         })
 
@@ -45,13 +45,13 @@ const register = async (req, res, next) => {
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
             // secure: true,
-            sameSite: "lax",
+            sameSite: "none",
             maxAge: 15 * 60 * 1000,
         })
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             // secure: true,
-            sameSite: "lax",
+            sameSite: "none",
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
         res.status(201).json({ status: httpStatusText.SUCCESS, data: {
@@ -81,6 +81,7 @@ const login = async (req, res, next) => {
             const error = new Error('A user with this email could not be found.')
             error.statusCode = 404;
             error.status = httpStatusText.FAIL;
+            error.data = 'User not found';
             throw error;
         }
         const isEqual = await bcrypt.compare(password, user.password);
@@ -88,6 +89,7 @@ const login = async (req, res, next) => {
             const error = new Error('Incorrect password.');
             error.statusCode = 401;
             error.status = httpStatusText.FAIL;
+            error.data = 'Incorrect password, please try again.';
             throw error;
         }
 
@@ -104,13 +106,13 @@ const login = async (req, res, next) => {
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
             // secure: true,
-            sameSite: "lax",
+            sameSite: "none",
             maxAge: 15 * 60 * 1000,
         })
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             // secure: true,
-            sameSite: "lax",
+            sameSite: "none",
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
         res.status(200).json({ status: httpStatusText.SUCCESS, data: {
@@ -133,9 +135,10 @@ const forgetPassword = async (req, res, next) => {
     try{
         const user = await User.findOne({ email });
         if(!user) {
-            const error = new Error('A user with this email could not be found, Please check the validity of your email address.')
+            const error = new Error('Invalid email address');
             error.statusCode = 404;
             error.status = httpStatusText.FAIL;
+            error.data = 'A user with this email could not be found, Please check the validity of your email address.';
             throw error;
         }
         user.resetToken = crypto.randomBytes(32).toString('hex');
@@ -164,14 +167,22 @@ const resetPassword = async (req, res, next) => {
         });
 
         if(!user) {
-            const error = new Error('Invalid or expired reset token.');
+            const error = new Error('Invalid or expired password reset token.');
             error.statusCode = 400;
             error.status = httpStatusText.FAIL;
+            error.data = {
+                reason: 'The provided reset token is invalid or has expired.',
+                hint: 'Please request a new password reset link.'
+            };
             throw error;
         }
         const isMatch = await bcrypt.compare( newPassword, user.password );
         if(isMatch) {
-            return res.status(400).json({ status: httpStatusText.FAIL, message: "The old password cannot be entered, Please enter a new password." });
+            const error = new Error('Invalid password');
+            error.statusCode = 400;
+            error.status = httpStatusText.FAIL;
+            error.data = 'The old password cannot be entered, Please enter a new password.';
+            throw error;
         }
 
         const hashNewPassword = await bcrypt.hash(newPassword, 12);
@@ -197,6 +208,7 @@ const logout = async (req, res, next) => {
             const error = new Error('User not found !');
             error.statusCode = 404;
             error.status = httpStatusText.FAIL;
+            error.data = 'You cannot log out from a non-existent email address.';
             throw error;
         }
         const refreshToken = req.cookies.refreshToken;

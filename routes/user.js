@@ -1,6 +1,6 @@
 const express = require('express');
 
-const controllerUser = require('../controllers/user');
+const userController = require('../controllers/user');
 const verifyToken = require('../middlewares/auth/verifyToken');
 const allowedTo = require('../middlewares/auth/allowedTo');
 const userRole = require('../utils/userRole');
@@ -11,12 +11,14 @@ const upload = require('../middlewares/upload');
 
 const router = express.Router();
 
-router.get('/all', verifyToken, allowedTo(userRole.ADMIN), controllerUser.getAllUsers);
+router.get('/all', verifyToken, allowedTo(userRole.ADMIN), userController.getAllUsers);
 
-router.get('/me', verifyToken, controllerUser.getUser);
+router.get('/me', verifyToken, userController.getUser);
 
-router.put('/update', authLimiter, verifyToken, upload.single('avatar'), validate.updateUser, handleValidationErrors, controllerUser.updateUser);
+router.put('/update', authLimiter, verifyToken, upload.single('avatar'), validate.updateUser, handleValidationErrors, userController.updateUser);
 
-router.delete('/delete', verifyToken, controllerUser.deleteUser);
+router.patch("/role/:id", verifyToken, allowedTo(userRole.ADMIN), userController.updateUserRole);
+
+router.delete('/delete', verifyToken, userController.deleteUser);
 
 module.exports = router;

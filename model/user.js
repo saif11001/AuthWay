@@ -30,8 +30,7 @@ const userSchema = new Schema (
         password: {
             type: String,
             required: [ true, "Password is required" ],
-            minlength: [ 8, "Password must be at least 8 characters long" ],
-            maxlength: [ 20, "Password must be less than 20 characters" ]
+            select: false,
         },
         userRole: {
             type: String,
@@ -48,9 +47,7 @@ const userSchema = new Schema (
                 refreshToken: String,
                 deviceInfo: String,
                 createdAt: { type: Date, default: Date.now },
-                expiresAt: Date
-            },
-            {
+                expiresAt: Date,
                 _id: false
             }
         ],

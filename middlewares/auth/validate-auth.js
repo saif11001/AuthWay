@@ -32,7 +32,6 @@ const register = [
         .bail(),
     body('role')
         .optional()
-        .isIn(['user', 'admin']).withMessage('Invalid role. Must be one of: user, admin')
         .trim()
         .bail()
 ]
