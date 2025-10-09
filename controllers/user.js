@@ -11,7 +11,7 @@ const getAllUsers = async (req, res, next) => {
     page = Number(page) || 1;
     const skip = ( page - 1 ) * limit;
     try{
-        const users = await User.find({}, "-password -refreshToken -resetToken -resetTokenExpiration -__v" ).sort(sort).limit(limit).skip(skip);
+        const users = await User.find({}, "-password -sessions -resetToken -resetTokenExpiration -__v" ).sort(sort).limit(limit).skip(skip);
         if(users.length <= 0) {
             return res.status(200).json({ status: httpStatusText.SUCCESS, data: [], message: "There are no users." })
         }
@@ -33,6 +33,7 @@ const getUser = async (req, res, next) => {
             const error = new Error('User not found !');
             error.statusCode = 404;
             error.status = httpStatusText.FAIL;
+            error.message = 'The user you want to find does not exist.';
             throw error;
         }
         res.status(200).json({ status: httpStatusText.SUCCESS, data: { user } });
@@ -47,7 +48,11 @@ const updateUser = async (req, res, next) => {
     try{
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ status: httpStatusText.FAIL, message: "User not found" });
+            const error = new Error('User not found !');
+            error.statusCode = 404;
+            error.status = httpStatusText.FAIL;
+            error.message = 'The user you want to find does not exist.';
+            throw error;
         }
 
         const updates = {};
@@ -57,7 +62,11 @@ const updateUser = async (req, res, next) => {
         if(email) {
             const oldEmail = await User.findOne({ email })
             if( oldEmail && oldEmail._id.toString() !== userId.toString() ){
-                return res.status(409).json({ status: httpStatusText.FAIL, message: 'Email already in use by another user' })
+                const error = new Error('E-mail exists already');
+                error.statusCode = 409;
+                error.status = httpStatusText.FAIL;
+                error.message = 'Email already in use by another user, please pick a different one.';
+                throw error;
             }
             updates.email = email
         };
@@ -74,7 +83,11 @@ const updateUser = async (req, res, next) => {
 
         const updateUser = await User.findByIdAndUpdate(userId, { $set: updates }, { new: true });
         if (!updateUser) {
-            return res.status(404).json({ status: httpStatusText.FAIL, message: "User not found" });
+            const error = new Error('User not found !');
+            error.statusCode = 404;
+            error.status = httpStatusText.FAIL;
+            error.message = 'The user you want to find does not exist.';
+            throw error;
         }
 
         if(password) {
@@ -99,13 +112,19 @@ const updateUserRole = async (req, res, next) => {
     try{
         const user = await User.findById(updateduserId);
         if(!user) {
-
+            const error = new Error('User not found !');
+            error.statusCode = 404;
+            error.status = httpStatusText.FAIL;
+            error.message = 'The user you want to find does not exist.';
+            throw error;
         }
         user.userRole = role;
         await user.save();
-        
-    } catch (error) {
 
+        res.status(200).json({ status: httpStatusText.SUCCESS, data: { id: user._id, email: user.email, newRole: user.userRole } });
+
+    } catch (error) {
+        next(error);
     }
 }
 
@@ -114,7 +133,11 @@ const deleteUser = async (req, res, next) => {
     try{
         const user = await User.findById(userId);
         if(!user) {
-            return res.status(404).json({ status: httpStatusText.FAIL, data: { user: 'User not found' } });
+            const error = new Error('User not found !');
+            error.statusCode = 404;
+            error.status = httpStatusText.FAIL;
+            error.message = 'The user you want to find does not exist.';
+            throw error;
         }
         if (user.avatar) {
             const filePath = path.join(__dirname, "..", "uploads", user.avatar);

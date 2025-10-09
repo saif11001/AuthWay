@@ -14,10 +14,10 @@ const register = async (req, res, next) => {
     try{
         const oldUser = await User.findOne({ email });
         if(oldUser){
-            const error = new Error('E-mail exists already, please pick a different one.')
+            const error = new Error('E-mail exists already')
             error.statusCode = 422;
             error.status = httpStatusText.FAIL;
-            error.data = 'E-mail exists already';
+            error.data = 'E-mail exists already, please pick a different one.';
             throw error;
         }
         const hashPassword = await bcrypt.hash(password, 12);
