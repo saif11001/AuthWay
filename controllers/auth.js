@@ -2,12 +2,13 @@ const User = require('../model/user');
 const httpStatusText = require('../utils/httpStatusText');
 const userRole = require('../utils/userRole');
 const config = require('../config/index');
+const generateRandomToken = require('../utils/createToken');
+const sendEmail = require('../utils/sendEmail');
 
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const crypto = require("crypto");
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const register = async (req, res, next) => {
     const { firstName, lastName, email, password } = req.body;
@@ -28,12 +29,61 @@ const register = async (req, res, next) => {
             email: email,
             password: hashPassword,
             userRole: userRole.USER,
-            avatar: req.file ? req.file.filename : null
+            avatar: req.file ? req.file.filename : null,
+            emailVerified: false
         })
+        
+        const emailVerificationToken = generateRandomToken();
+        user.emailVerificationToken = emailVerificationToken
+        user.emailVerificationExpires = Date.now() + 1 * 60 * 60 * 1000;
+        
+        await user.save();
+
+        const verifyURL = `${config.clientUrl}/verify-email/${emailVerificationToken}`;
+        const html = `
+            <p>Hello ${user.firstName},</p>
+            <p>Click the link below to verify your email address:</p>
+            <a href="${verifyURL}">${verifyURL}</a>
+            <p>This link will expire in 1 hours.</p>
+        `;
+
+        await sendEmail(user.email, 'Verify your email', html, false);
+
+        res.status(201).json({ status: httpStatusText.SUCCESS, message: 'User registered successfully, please check your email to verify your account' });
+
+    } catch (error) {
+        if (req.file) {
+        const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+        fs.unlink(filePath, (err) => { /* ignore */ });
+        }
+        next(error);
+    }
+}
+
+const verifyEmail = async (req, res, next) => {
+    const token = req.params.token;
+    try{
+        if(!token){
+            const error = new Error('Invalid verification link.');
+            error.statusCode = 400;
+            error.status = httpStatusText.FAIL;
+            error.data = '';
+            throw error;
+        }
+        const user = await User.findOne({
+            emailVerificationToken: token,
+            emailVerificationExpires: { $gt: Date.now() }
+        });
+        if(!user){
+            return res.status(400).json({ status: httpStatusText.FAIL, message: 'Invalid or expired verifiction link, Please request verification again.' });
+        }
+
+        user.emailVerified = true;
+        user.emailVerificationToken = undefined;
+        user.emailVerificationExpires = undefined;
 
         const accessToken = jwt.sign({ id: user._id, email: user.email, userRole: user.userRole }, config.jwtSecret.key, { expiresIn : config.jwtSecret.expiresIn });
         const refreshToken = jwt.sign({ id: user._id }, config.jwtRefresh.key, { expiresIn: config.jwtRefresh.expiresIn });
-        
         
         user.sessions.push({
             refreshToken,
@@ -54,7 +104,7 @@ const register = async (req, res, next) => {
             sameSite: "none",
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
-        res.status(201).json({ status: httpStatusText.SUCCESS, data: {
+        res.status(201).json({ status: httpStatusText.SUCCESS, message: 'Account created and verified successfully.', data: {
             id: user._id,
             firstName: user.firstName,
             lastName: user.lastName,
@@ -65,10 +115,37 @@ const register = async (req, res, next) => {
         }});
 
     } catch (error) {
-        if (req.file) {
-        const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
-        fs.unlink(filePath, (err) => { /* ignore */ });
+        next(error);
+    }
+}
+
+const resendVerification = async (req, res, next) => {
+    const email = req.body.email;
+    try {
+        const user = await User.findOne({ email: email });
+        if(!user) {
+            const error = new Error('If an account exists, a verification link has been sent.')
+            error.statusCode = 404;
+            error.status = httpStatusText.FAIL;
+            throw error;
         }
+        if(user.emailVerified) {
+            return res.status(200).json({ status: httpStatusText.SUCCESS, message: 'Email is already verified.' });
+        }
+
+        const emailVerificationToken = generateRandomToken();
+        user.emailVerificationToken = emailVerificationToken
+        user.emailVerificationExpires = Date.now() + 1 * 60 * 60 * 1000;
+        
+        await user.save();
+
+        const verifyURL = `${config.clientUrl}/verify-email/${emailVerificationToken}`;
+        const html = `Click to verify: <a href="${verifyURL}">${verifyURL}</a>`;
+        await sendEmail(user.email, 'Verify your email', html, false);
+
+        return res.status(200).json({ status: httpStatusText.SUCCESS, message: 'If an account exists, a verification link has been sent.' });
+
+    } catch (error) {
         next(error);
     }
 }
@@ -76,7 +153,7 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
     const { email, password } = req.body;
     try{
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).select("+password");
         if(!user) {
             const error = new Error('A user with this email could not be found.')
             error.statusCode = 404;
@@ -93,13 +170,51 @@ const login = async (req, res, next) => {
             throw error;
         }
 
+        const OTP = Math.floor(100000 + Math.random() * 900000).toString();
+        user.otpCode = OTP;
+        user.otpExpires = Date.now() + 1 * 60 * 1000;
+        user.save();
+
+        const html = `<p>Hello ${user.firstName},</p>
+            <p>Your login code is: <b>${OTP}</b></p>
+            <p>This code will expire in 5 minutes.</p>`;
+        await sendEmail(user.email, "Your Login Code", html);
+
+        res.status(200).json({ status: httpStatusText.SUCCESS, message: 'OTP send too your email, Please verify to complete login.' });
+
+    }catch (error) {
+        next(error);
+    }
+}
+
+const verifyOTP = async (req, res, next) => {
+    const { email, OTP, rememberMe } = req.body;
+    try {
+        const user = await User.findOne({ email: email });
+        if(!user || !user.otpCode) {
+            const error = new Error('No OTP request found.')
+            error.statusCode = 404;
+            error.status = httpStatusText.FAIL;
+            throw error;
+        }
+        if(user.otpCode != OTP || user.otpExpires < Date.now() ) {
+            const error = new Error('Invalid or expired OTP.');
+            error.statusCode = 404;
+            error.status = httpStatusText.FAIL;
+            throw error;
+        }
+
+        user.otpCode = null;
+        user.otpExpires = null;
+        const refreshExpiry = rememberMe ? config.jwtRefresh.expiresInRM : config.jwtRefresh.expiresIn;
+
         const accessToken  = jwt.sign({ id: user._id, email: user.email, userRole: user.userRole }, config.jwtSecret.key, { expiresIn: config.jwtSecret.expiresIn });
-        const refreshToken = jwt.sign({ id: user._id }, config.jwtRefresh.key, { expiresIn: config.jwtRefresh.expiresIn });
+        const refreshToken = jwt.sign({ id: user._id }, config.jwtRefresh.key, { expiresIn: refreshExpiry });
 
         user.sessions.push({
             refreshToken,
             deviceInfo: req.headers['user-agent'] || "Unknown device",
-            expiresAt: new Date(Date.now() + 30*24*60*60*1000)
+            expiresAt: new Date(Date.now() + (rememberMe ? config.jwtRefresh.expiresInRM : config.jwtRefresh.expiresIn) * 24 * 60 * 60 * 1000)
         });
         await user.save();
         
@@ -113,7 +228,7 @@ const login = async (req, res, next) => {
             httpOnly: true,
             // secure: true,
             sameSite: "none",
-            maxAge: 30 * 24 * 60 * 60 * 1000,
+            maxAge: (rememberMe ? config.jwtRefresh.expiresInRM : config.jwtRefresh.expiresIn) * 24 * 60 * 60 * 1000,
         });
         res.status(200).json({ status: httpStatusText.SUCCESS, data: {
             id: user._id,
@@ -124,8 +239,8 @@ const login = async (req, res, next) => {
             avatar: user.avatar,
             createdAt: user.createdAt,
         }});
-
-    }catch (error) {
+        
+    } catch (error) {
         next(error);
     }
 }
@@ -141,7 +256,7 @@ const forgetPassword = async (req, res, next) => {
             error.data = 'A user with this email could not be found, Please check the validity of your email address.';
             throw error;
         }
-        user.resetToken = crypto.randomBytes(32).toString('hex');
+        user.resetToken = generateRandomToken();
         user.resetTokenExpiration = Date.now() + 900000;
         
         await user.save();
@@ -227,7 +342,10 @@ const logout = async (req, res, next) => {
 
 module.exports = {
     register,
+    verifyEmail,
+    resendVerification, 
     login,
+    verifyOTP,
     forgetPassword,
     resetPassword,
     logout

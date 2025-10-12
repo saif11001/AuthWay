@@ -5,6 +5,7 @@ const Schema = mongoose.Schema;
 
 const userSchema = new Schema (
     {
+        //Basic Data
         firstName: {
             type: String,
             required: [ true, "First name is required"],
@@ -42,6 +43,8 @@ const userSchema = new Schema (
             type: String,
             default: null
         },
+
+        //Refresh Tokens
         sessions: [
             {
                 refreshToken: String,
@@ -51,6 +54,8 @@ const userSchema = new Schema (
                 _id: false
             }
         ],
+
+        //Reset Tokens
         resetToken: {
             type: String,
             default: null
@@ -58,7 +63,32 @@ const userSchema = new Schema (
         resetTokenExpiration: {
             type: Date,
             default: null
+        },
+
+        //Email Verification Tokens
+        emailVerified: {
+            type: Boolean,
+            default: false
+        },
+        emailVerificationToken: {
+            type: String,
+            default: null
+        },
+        emailVerificationExpires: {
+            type: Date,
+            default: null
+        },
+
+        //Email OTP
+        otpCode: {
+            type: String,
+            default: null
+        },
+        otpExpires: {
+            type: Date,
+            default: null
         }
+
     },
     {
         timestamps: true

@@ -36,9 +36,19 @@ const register = [
         .bail()
 ]
 
+const resendVerification = [
+    body('email')
+        .notEmpty().withMessage('The E-mail part must be filled in !')
+        .isEmail().withMessage('Please enter a valid email.')
+        .normalizeEmail()
+        .toLowerCase()
+        .trim()
+        .bail(),
+]
+
 const login = [
     body('email')
-        .notEmpty().withMessage('Tour E-mail is required !')
+        .notEmpty().withMessage('Your E-mail is required !')
         .isEmail().withMessage('Please enter a valid email.')
         .normalizeEmail()
         .toLowerCase()
@@ -48,6 +58,22 @@ const login = [
         .isLength({ min: 8, max: 20}).withMessage('Your password must be between 6 and 20 characters long.')
         .trim()
         .bail()
+]
+
+const verifyOTP = [
+    body('email')
+        .notEmpty().withMessage('Your E-mail is required !')
+        .isEmail().withMessage('Please enter a valid email.')
+        .normalizeEmail()
+        .toLowerCase()
+        .trim()
+        .bail(),
+    body('OTP')
+        .notEmpty().withMessage("OTP is required!")
+        .isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits.")
+        .isNumeric().withMessage("OTP must contain only numbers.")
+        .trim()
+        .bail(),
 ]
 
 const updateUser = [
@@ -84,6 +110,8 @@ const updateUser = [
 
 module.exports = {
     register,
+    resendVerification,
     login,
+    verifyOTP,
     updateUser
 }

@@ -17,6 +17,7 @@ const config = {
     jwtRefresh: {
         key: process.env.JWT_REFRESH_SECRET,
         expiresIn: "30d",
+        expiresInRM: "30d",
     },
     mail: {
         ApiKey : process.env.SENDGRID_API_KEY,

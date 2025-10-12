@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const httpStatusText = require('./utils/httpStatusText');
 const logger = require('./middlewares/logger');
 const config = require('./config/index');
+const { swaggerUi, swaggerSpec } = require("./config/swagger");
 
 const uri = config.db.uri;
 const port = config.app.port;
@@ -36,6 +37,8 @@ app.use(
     },
   })
 );
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 const authRouter = require('./routes/auth');
 const userRouter = require('./routes/user');
 
