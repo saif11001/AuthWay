@@ -30,7 +30,7 @@ It provides secure user authentication, JWT-based authorization, role management
 
 ## Project Structure
 
-![Project Structure](../my_diagram2.png)
+![Project Structure](./docs/my_diagram2.png)
 
 ---
 
