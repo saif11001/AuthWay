@@ -84,6 +84,8 @@ It provides secure user authentication, JWT-based authorization, role management
 - Build a frontend with React/Next.js.
 - Admin dashboard to manage users.
 
+---
+
 ## Author
 
 **Saif Eldeen Sobhi**
