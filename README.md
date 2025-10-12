@@ -96,5 +96,5 @@ It provides secure user authentication, JWT-based authorization, role management
 
 **Saif Eldeen Sobhi**
 
-LinkedIn
-https://www.linkedin.com/in/saif-eldeen-sobhy/
+- LinkedIn: [linkedin.com/in/saif-eldeen-sobhy](https://www.linkedin.com/in/saif-eldeen-sobhy/)  
+- Email: saifeldeen409@gmail.com
