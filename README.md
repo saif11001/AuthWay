@@ -28,6 +28,12 @@ It provides secure user authentication, JWT-based authorization, role management
 
 ---
 
+## Project Structure
+
+![Project Structure](../my_diagram2.png)
+
+---
+
 ## Getting Started
 
 1. Clone the repository:
