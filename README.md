@@ -64,18 +64,22 @@ It provides secure user authentication, JWT-based authorization, role management
 
 ### Auth
 
-- **POST** /api/auth/register → Register a new user.
+- **POST** /api/auth/register → Register a new user (with avatar upload).
+- **GET** /api/auth/verify-email/{token} → Verify user email by token.
+- **POST** /api/auth/resend-verification → Resend verification email.
 - **POST** /api/auth/login → Login user and return token.
-- **POST** /api/auth/logout → Logout user and invalidate refresh token.
-- **POST** /api/auth/verify-email → Verify email using OTP.
-- **POST** /api/auth/resend-otp → Resend OTP for email verification.
+- **POST** /api/auth/verify-otp → Verify user OTP (after login/register).
+- **POST** /api/auth/forget-password → Send password reset link.
+- **POST** /api/auth/reset-password/{token} → Reset user password using token.
+- **POST** /api/auth/logout → Logout user (needs Bearer token).
 
 ### Users
 
-- **GET** /api/users/me → Get current logged-in user.
-- **PATCH** /api/users/update → Update user info.
-- **DELETE** /api/users/delete → Delete user account.
-- **GET** /api/users/:id (Admin only) → Get user by ID.
+- **GET** /api/user/all → Get all users (Admin only).
+- **GET** /api/user/me → Get current logged-in user.
+- **PUT** /api/user/update → Update current user (with avatar upload).
+- **PATCH** /api/user/update → Update user role (Admin only).
+- **DELETE** /api/user/delete → Delete current user.
 
 ### Docs
 
